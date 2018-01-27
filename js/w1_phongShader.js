@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Part A</title>
+		<title>demo - Phong shader</title>
 		<meta charset="utf-8">
 		<style>
 			body {
@@ -30,9 +30,8 @@
 	//We are explicitly passing these in
       	uniform vec3 light1_pos;
       	uniform vec3 light2_pos;
-      	uniform vec3 light3_pos;
 
-	varying vec3 N, L1, L2, L3, V;
+	varying vec3 N, L1, L2, V;
 
 	void main() {
 
@@ -48,12 +47,10 @@
         	//the lights positions are defined in WORLD coordinates, we want to put them in CAMERA coordinates too
         	vec4 L1_cam = viewMatrix * vec4(light1_pos, 1.0);
         	vec4 L2_cam = viewMatrix * vec4(light2_pos, 1.0);
-        	vec4 L3_cam = viewMatrix * vec4(light3_pos, 1.0);
     
         	//get the normalized vectors from each light position to the vertex positions
         	L1 = vec3(normalize(L1_cam - position).xyz);
         	L2 = vec3(normalize(L2_cam - position).xyz);
-        	L3 = vec3(normalize(L3_cam - position).xyz);
     
     
         	//reverse direction of position vector to get view vector from vertex to camera
@@ -70,25 +67,22 @@
 
 	precision mediump float;
 	
-      	varying vec3 V, N, L1, L2, L3;
+      	varying vec3 V, N, L1, L2;
       	float spec_intensity = 32.0; //higher value indicates more rapid falloff
 
       	uniform vec3 ambient; //general ambient light in the scene applied to all objects
 
       	uniform vec3 light1_diffuse;
       	uniform vec3 light2_diffuse;
-      	uniform vec3 light3_diffuse;
 
       	uniform vec3 light1_specular;
       	uniform vec3 light2_specular;
-      	uniform vec3 light3_specular;
 
 
       	void main() {
 
         	vec4 outColor1 = vec4(0.0);
         	vec4 outColor2 = vec4(0.0);
-        	vec4 outColor3 = vec4(0.0);
         
         	//diffuse light depends on the angle between the light and the vertex normal
         	float diff1 = max(0.0, dot(N, L1)); //just to make sure not negative
@@ -121,108 +115,15 @@
         	} else {
           		outColor2 = clamp(vec4(color2,1.0), 0.0,1.0);
         	}
-
-        	//Light 3
-        	//diffuse
-        	float diff3 = max(0.0, dot(N, L3));
-        	vec3 color3 = diff3 * light3_diffuse;
         
-        
-        	//specular
-        	vec3 R3 = normalize(reflect(-L3,N));
-        
-        	float spec3 = pow( max(dot(R3, V), 0.0), spec_intensity);
-        	color3 += spec3 * light3_specular;
-        	if (spec3 > 1.0) {
-          		outColor3 = vec4(light3_specular,1.0);
-        	} else {
-          		outColor3 = clamp(vec4(color3,1.0), 0.0,1.0);
-        	}
-        
-        	gl_FragColor = clamp(vec4(ambient, 1.0) + outColor1 + outColor2 + outColor3, 0.0, 1.0); //add the two lights together, make sure final value is between 0.0 and 1.0
+        	gl_FragColor = clamp(vec4(ambient, 1.0) + outColor1 + outColor2, 0.0, 1.0); //add the two lights together, make sure final value is between 0.0 and 1.0
         
 
 	}
 
 	</script>
-	 <script id="skyboxVS" type="x-shader/x-vertex">
 
-	uniform mat4 modelMatrix;
-	uniform mat4 viewMatrix;
-      	uniform mat4 projectionMatrix;
 
-     	attribute vec3 position; 
-
-	varying vec3 vWorldPosition;
-	
-	void main() {
-
-		vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-		vWorldPosition = worldPosition.xyz;
-
-		vec4 p = viewMatrix * modelMatrix * vec4(position, 1.0);
-		gl_Position = projectionMatrix * p;
-		
-     	 }
-
-    </script>
-
-	<script id="skyboxFS" type="x-shader/x-fragment">
-
-		precision mediump float;
-		
-		uniform samplerCube tCube;
-		varying vec3 vWorldPosition;
-
-		void main() {
-
-			gl_FragColor = textureCube( tCube, vec3(  vWorldPosition ) );
-		}
-	
-    </script>
-
-	<script id="environmentMapVS" type="x-shader/x-vertex">
-
-	uniform mat4 modelMatrix;
-	uniform mat4 viewMatrix;
-      	uniform mat4 projectionMatrix;
-
-	uniform vec3 cameraPosition;
-	
-     	attribute vec3 position; 
-     	attribute vec3 normal; 
-
-	varying vec3 vI;
-	varying vec3 vWorldNormal;
-
-	void main() {
-  		vec4 mvPosition = viewMatrix * modelMatrix * vec4( position, 1.0 );
-  		vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-
-  		vWorldNormal = normalize( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * normal );
-
-  		vI = worldPosition.xyz - cameraPosition;
-
-  		gl_Position = projectionMatrix * mvPosition;
-	}	
-  
-	</script>
-
-	 <script id="environmentMapFS" type="x-shader/x-fragment">
-
-		precision mediump float;
-
-		uniform samplerCube envMap;
-
-		varying vec3 vI, vWorldNormal;
-
-		void main() {
-  			vec3 reflection = reflect( vI, vWorldNormal );
-  			vec4 envColor = textureCube( envMap, vec3( -reflection.x, reflection.yz ) );
-  			gl_FragColor = vec4(envColor);
-		}
-  
-	</script>
 	<script>
 				
   	var container;
@@ -234,12 +135,6 @@
 
 	var mesh1, mesh2, mesh3;
 	var material;
-
-			var em_vs = document.getElementById( 'environmentMapVS' ).textContent;
-      		var em_fs = document.getElementById( 'environmentMapFS' ).textContent;
-
-      		var sb_vs = document.getElementById( 'skyboxVS' ).textContent;
-      		var sb_fs = document.getElementById( 'skyboxFS' ).textContent;
 
 	init();
 	animate();
@@ -253,36 +148,6 @@
 
 		scene = new THREE.Scene();
 
-		var cubeMap = new THREE.CubeTextureLoader()
-				.setPath("./ryfjallet/")
-				.load( [
-					'posx.jpg',
-					'negx.jpg',
-					'posy.jpg',
-					'negy.jpg',
-					'posz.jpg',
-					'negz.jpg'
-				] );
-
-		var uniforms = { "tCube": { type: "t", value: cubeMap } };
-			
-			var material = new THREE.RawShaderMaterial( {
-					uniforms: uniforms,
-					vertexShader: sb_vs,
-					fragmentShader: sb_fs
-				} );
-
-
-			material.depthWrite = false;
-      			material.side = THREE.BackSide;
-			
-
-			var geometry = new THREE.BoxGeometry( 2000, 2000, 2000 );
-
-			skyMesh = new THREE.Mesh( geometry, material );
-
-
-			scene.add( skyMesh );
 
         	// lights
         	var ambient = new THREE.Vector3(0.1,0.1,0.1);
@@ -292,19 +157,15 @@
         	var light1_specular = new THREE.Vector3(1.0,1.0,1.0);
         
         	var light2_pos = new THREE.Vector3(-10.0,0.0,0.0); //from the left
-        	var light2_diffuse = new THREE.Vector3(0.0,1.0,0+.0);
+        	var light2_diffuse = new THREE.Vector3(0.0,0.0,1.0);
         	var light2_specular = new THREE.Vector3(1.0,1.0,1.0);
-
-        	var light3_pos = new THREE.Vector3(0.0,-10.0,0.0); //from the bottom 
-        	var light3_diffuse = new THREE.Vector3(0.0,0.0,1.0);
-        	var light3_specular = new THREE.Vector3(1.0,1.0,1.0);
 
 
 		// geometry
 
-		var geometry1 = new THREE.SphereGeometry( 1, 10, 64 );
-        var geometry2 = new THREE.BoxGeometry( 1, 1, 1 );
-        var geometry3 = new THREE.TorusKnotGeometry( 1, 0.1, 100, 16 );
+		var geometry1 = new THREE.SphereGeometry( 1, 64, 64 );
+        	var geometry2 = new THREE.BoxGeometry( 1, 1, 1 );
+        	var geometry3 = new THREE.TorusKnotGeometry( 1, 0.1, 100, 16 );
 
 		// materials (ie, linking to the shader program)
 
@@ -315,53 +176,29 @@
             		light1_specular:  { type: "v3", value: light1_specular },
             		light2_pos: { type: "v3", value: light2_pos },
             		light2_diffuse: { type: "v3", value: light2_diffuse },
-            		light2_specular:  { type: "v3", value: light2_specular }, 
-            		light3_pos: { type: "v3", value: light3_pos },
-            		light3_diffuse: { type: "v3", value: light3_diffuse },
-            		light3_specular:  { type: "v3", value: light3_specular },            	
+            		light2_specular:  { type: "v3", value: light2_specular },
 		};
 
-     		material3 = new THREE.RawShaderMaterial( {
+     		material = new THREE.RawShaderMaterial( {
             		uniforms: uniforms,
             		vertexShader: vs,
             		fragmentShader: fs,	
 		} );
 
-     		var uniforms2 = {
-        	tCube: { type: "t", value: cubeMap },
-	};
 
-     		var material2 = new THREE.RawShaderMaterial( {
-					uniforms: uniforms2,
-					vertexShader: em_vs,
-					fragmentShader: em_fs
-	} );
-	
 
-     	//var dlight = new THREE.DirectionalLight(0xffffff, 2.0, 1000);
-     	//dlight.target = mesh2;
-     	//scene.add(dlight);
-
-		mesh1 = new THREE.Mesh( geometry1, material3 );
+		mesh1 = new THREE.Mesh( geometry1, material );
 		mesh1.translateX(-2.5);
-		//mesh1.translateY(2.5);
         	scene.add( mesh1 );
 
         
-	      	mesh2 = new THREE.Mesh( geometry2, material2 );
+	      	mesh2 = new THREE.Mesh( geometry2, material );
 		mesh2.translateX(0.0);
         	scene.add( mesh2 );
 
-        	mesh3 = new THREE.Mesh( geometry3, material3 );
+        	mesh3 = new THREE.Mesh( geometry3, material );
 		mesh3.translateX(2.5);
-		mesh3.translateY(-2.5);
         	scene.add( mesh3 );
-
-        pivot = new THREE.Object3D();
-			pivot.add( mesh1 );
-			scene.add( pivot );
-
-		var angle = 0;
 
   
 		renderer = new THREE.WebGLRenderer();
@@ -387,17 +224,10 @@
 
 		var time = performance.now();
 
-		pivot.rotation.y += 0.015;
-
 		mesh2.rotation.x = time * 0.00005;
 		mesh2.rotation.y = time * 0.0005;
 
 		mesh3.rotation.x = time * 0.0009;
-
-		//angle -= 0.01;
-
-		//material.uniforms.light1_pos.value.position.x = 10*Math.sin(0.01);
-  		//material.uniforms.light1_pos.position.y =10*Math.cos(.5);
 
 		//if I want to update the lights, I acutally have to update the material used by each object in the scene. 
 		//material.uniforms.light1_diffuse.value = new THREE.Vector3(0.0,1.0,0.0);
