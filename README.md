@@ -7,6 +7,6 @@ Homework 1
 [Part C](hw1/PartC.html) Extending the Game of Life with changing rules and states.  
 [Part D](hw1/PartD.pdf) Writeup on a visual effect that we found interesting.  
 
-Homework 2
-[Part A](hw2/PartA.html) A natural scene using terrain heightmaps and water.
-[Part B](hw2/PartB.html) Jellyfish deep underwater through the use of noise displacement and particle systems.
+Homework 2</br>
+[Part A](hw2/PartA.html) A natural scene using terrain heightmaps and water.</br>
+[Part B](hw2/PartB.html) Jellyfish deep underwater through the use of noise displacement and particle systems.</br>
