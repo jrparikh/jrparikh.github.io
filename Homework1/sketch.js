@@ -40,8 +40,9 @@ Particle.prototype.update = function(){
 
 // Method to display
 Particle.prototype.display = function() {
-  stroke(255,this.lifespan/1.5,0, this.lifespan);
-  strokeWeight(2);
+  //stroke(255,this.lifespan/1.5,0, this.lifespan);
+  //strokeWeight(2);
+  noStroke();
   fill(255,this.lifespan/1.5,0, this.lifespan);
   ellipse(this.position.x, this.position.y, 12, 12);
 };
